@@ -1,12 +1,13 @@
 # Chess Tree
 
-
 This is an ~~infinite~~ **very large** tree, showing every possible chess game.
 
 For performance reasons, the render distance is one turn.
 
 Use WASD to navigate the tree of possiblilities.
 
+
+You can view the project [here](http://htmlpreview.github.io/?https://github.com/rtavenner/Chess-Tree/master/index.html)
 
 
 ### Coding language
