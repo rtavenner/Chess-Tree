@@ -1,19 +1,14 @@
 import Html
-import Html.Attributes
+import Html.Lazy
 import Task
-import Svg
-import Svg.Attributes
 
-import Lazy exposing (Lazy, lazy, force)
 import Tree exposing (Tree)
-import TreeZipper exposing (TreeZipper)
 
-import List.Extra as List
 import Dict exposing (Dict)
+import Set exposing (Set)
 
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Math.Matrix4 as Mat4 exposing (Mat4)
 
 import WebGL exposing (Mesh, Shader)
 import WebGL.Texture exposing (Texture, Error, loadWith, nonPowerOfTwoOptions)
@@ -22,9 +17,10 @@ import Keyboard
 
 import Chess exposing (Color(..), Board, Piece(..))
 
-
 import HyperbolicPlaneTree exposing (Vertex)
 
+import AnimationFrame
+import Time exposing (Time)
 
 
 type Model
@@ -34,19 +30,38 @@ type Model
 
 type Msg
     = TextureLoaded (Result Error Texture)
-    | Msg HyperbolicPlaneTree.Msg
+    | KeyDown Keyboard.KeyCode
+    | KeyUp Keyboard.KeyCode
+    | Tick Time
 
-main : Program Never Model Msg
+main : Program Never {keys : Set Keyboard.KeyCode, model : Model} Msg
 main = 
-    let {init, update, view, subscriptions} = HyperbolicPlaneTree.run (Tree.map (WebGL.triangles << chessBoard) Chess.theTree)
+    let {init, update, view} = HyperbolicPlaneTree.run (Tree.map (WebGL.triangles << chessBoard) Chess.theTree)
     in Html.program
-        { init = (LoadingAssets, Task.attempt TextureLoaded (loadWith nonPowerOfTwoOptions "./Pieces.png"))
-        , update = \msg model ->
-            case (msg,model) of
-                (TextureLoaded (Ok tx), _) -> (MainApp tx init, Cmd.none)
-                (Msg msg, MainApp tx model) -> (MainApp tx (update msg model), Cmd.none)
-                _ -> (model, Cmd.none)
-        , view = \model -> case model of
+        { init = 
+            ( { model = LoadingAssets
+              , keys = Set.empty
+              }
+            , Task.attempt TextureLoaded (loadWith nonPowerOfTwoOptions "./Pieces.png")
+            )
+        , update = \msg m ->
+            case (msg,m.model) of
+                (TextureLoaded (Ok tx), _) -> ({m | model = MainApp tx init}, Cmd.none)
+                (Tick dt, MainApp tx model) -> 
+                    let r = (if Set.member 87 m.keys then (Time.inSeconds dt) else 0) - (if Set.member 83 m.keys then (Time.inSeconds dt) else 0)
+                        t = (if Set.member 68 m.keys then (Time.inSeconds dt) else 0) - (if Set.member 65 m.keys then (Time.inSeconds dt) else 0)
+                    in if r == 0 && t == 0
+                    then (m, Cmd.none)
+                    else
+                        ( { m
+                          | model = MainApp tx (update {r = r, theta = t} model)
+                          }
+                        , Cmd.none
+                        )
+                (KeyDown k, _) -> ({m | keys = Set.insert k m.keys}, Cmd.none)
+                (KeyUp   k, _) -> ({m | keys = Set.remove k m.keys}, Cmd.none)
+                _ -> (m, Cmd.none)
+        , view = Html.Lazy.lazy (\{model} -> case model of
             LoadingAssets -> 
                 Html.text "Loading..."
             LoadingFailed err -> 
@@ -55,8 +70,12 @@ main =
                     [ Html.text "Failed to load assets. The error was:"
                     , Html.text (toString err)
                     ]
-            MainApp tx model -> Html.map Msg (view tx model)
-        , subscriptions = \_ -> Sub.map Msg subscriptions
+            MainApp tx model -> Html.map never (view tx model))
+        , subscriptions = \_ -> Sub.batch
+            [ Keyboard.downs KeyDown
+            , Keyboard.ups KeyUp
+            , AnimationFrame.diffs Tick
+            ]
         }
 
 

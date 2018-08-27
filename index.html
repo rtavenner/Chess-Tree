@@ -12689,6 +12689,28 @@ var _elm_community$webgl$WebGL_Texture$load = _elm_community$webgl$WebGL_Texture
 var _elm_community$webgl$WebGL_Texture$clampToEdge = _elm_community$webgl$WebGL_Texture$Wrap(33071);
 var _elm_community$webgl$WebGL_Texture$nonPowerOfTwoOptions = {magnify: _elm_community$webgl$WebGL_Texture$linear, minify: _elm_community$webgl$WebGL_Texture$nearest, horizontalWrap: _elm_community$webgl$WebGL_Texture$clampToEdge, verticalWrap: _elm_community$webgl$WebGL_Texture$clampToEdge, flipY: true};
 var _elm_community$webgl$WebGL_Texture$mirroredRepeat = _elm_community$webgl$WebGL_Texture$Wrap(33648);
+var _elm_lang$animation_frame$Native_AnimationFrame = function()
+{
+
+function create()
+{
+	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	{
+		var id = requestAnimationFrame(function() {
+			callback(_elm_lang$core$Native_Scheduler.succeed(Date.now()));
+		});
+
+		return function() {
+			cancelAnimationFrame(id);
+		};
+	});
+}
+
+return {
+	create: create
+};
+
+}();
 //import Native.Scheduler //
 
 var _elm_lang$core$Native_Time = function() {
@@ -12905,6 +12927,147 @@ _elm_lang$core$Native_Platform.effectManagers['Time'] = {pkg: 'elm-lang/core', i
 var _elm_lang$core$Process$kill = _elm_lang$core$Native_Scheduler.kill;
 var _elm_lang$core$Process$sleep = _elm_lang$core$Native_Scheduler.sleep;
 var _elm_lang$core$Process$spawn = _elm_lang$core$Native_Scheduler.spawn;
+var _elm_lang$animation_frame$AnimationFrame$rAF = _elm_lang$animation_frame$Native_AnimationFrame.create(
+	{ctor: '_Tuple0'});
+var _elm_lang$animation_frame$AnimationFrame$subscription = _elm_lang$core$Native_Platform.leaf('AnimationFrame');
+var _elm_lang$animation_frame$AnimationFrame$State = F3(
+	function (a, b, c) {
+		return {subs: a, request: b, oldTime: c};
+	});
+var _elm_lang$animation_frame$AnimationFrame$init = _elm_lang$core$Task$succeed(
+	A3(
+		_elm_lang$animation_frame$AnimationFrame$State,
+		{ctor: '[]'},
+		_elm_lang$core$Maybe$Nothing,
+		0));
+var _elm_lang$animation_frame$AnimationFrame$onEffects = F3(
+	function (router, subs, _p0) {
+		var _p1 = _p0;
+		var _p5 = _p1.request;
+		var _p4 = _p1.oldTime;
+		var _p2 = {ctor: '_Tuple2', _0: _p5, _1: subs};
+		if (_p2._0.ctor === 'Nothing') {
+			if (_p2._1.ctor === '[]') {
+				return _elm_lang$core$Task$succeed(
+					A3(
+						_elm_lang$animation_frame$AnimationFrame$State,
+						{ctor: '[]'},
+						_elm_lang$core$Maybe$Nothing,
+						_p4));
+			} else {
+				return A2(
+					_elm_lang$core$Task$andThen,
+					function (pid) {
+						return A2(
+							_elm_lang$core$Task$andThen,
+							function (time) {
+								return _elm_lang$core$Task$succeed(
+									A3(
+										_elm_lang$animation_frame$AnimationFrame$State,
+										subs,
+										_elm_lang$core$Maybe$Just(pid),
+										time));
+							},
+							_elm_lang$core$Time$now);
+					},
+					_elm_lang$core$Process$spawn(
+						A2(
+							_elm_lang$core$Task$andThen,
+							_elm_lang$core$Platform$sendToSelf(router),
+							_elm_lang$animation_frame$AnimationFrame$rAF)));
+			}
+		} else {
+			if (_p2._1.ctor === '[]') {
+				return A2(
+					_elm_lang$core$Task$andThen,
+					function (_p3) {
+						return _elm_lang$core$Task$succeed(
+							A3(
+								_elm_lang$animation_frame$AnimationFrame$State,
+								{ctor: '[]'},
+								_elm_lang$core$Maybe$Nothing,
+								_p4));
+					},
+					_elm_lang$core$Process$kill(_p2._0._0));
+			} else {
+				return _elm_lang$core$Task$succeed(
+					A3(_elm_lang$animation_frame$AnimationFrame$State, subs, _p5, _p4));
+			}
+		}
+	});
+var _elm_lang$animation_frame$AnimationFrame$onSelfMsg = F3(
+	function (router, newTime, _p6) {
+		var _p7 = _p6;
+		var _p10 = _p7.subs;
+		var diff = newTime - _p7.oldTime;
+		var send = function (sub) {
+			var _p8 = sub;
+			if (_p8.ctor === 'Time') {
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					router,
+					_p8._0(newTime));
+			} else {
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					router,
+					_p8._0(diff));
+			}
+		};
+		return A2(
+			_elm_lang$core$Task$andThen,
+			function (pid) {
+				return A2(
+					_elm_lang$core$Task$andThen,
+					function (_p9) {
+						return _elm_lang$core$Task$succeed(
+							A3(
+								_elm_lang$animation_frame$AnimationFrame$State,
+								_p10,
+								_elm_lang$core$Maybe$Just(pid),
+								newTime));
+					},
+					_elm_lang$core$Task$sequence(
+						A2(_elm_lang$core$List$map, send, _p10)));
+			},
+			_elm_lang$core$Process$spawn(
+				A2(
+					_elm_lang$core$Task$andThen,
+					_elm_lang$core$Platform$sendToSelf(router),
+					_elm_lang$animation_frame$AnimationFrame$rAF)));
+	});
+var _elm_lang$animation_frame$AnimationFrame$Diff = function (a) {
+	return {ctor: 'Diff', _0: a};
+};
+var _elm_lang$animation_frame$AnimationFrame$diffs = function (tagger) {
+	return _elm_lang$animation_frame$AnimationFrame$subscription(
+		_elm_lang$animation_frame$AnimationFrame$Diff(tagger));
+};
+var _elm_lang$animation_frame$AnimationFrame$Time = function (a) {
+	return {ctor: 'Time', _0: a};
+};
+var _elm_lang$animation_frame$AnimationFrame$times = function (tagger) {
+	return _elm_lang$animation_frame$AnimationFrame$subscription(
+		_elm_lang$animation_frame$AnimationFrame$Time(tagger));
+};
+var _elm_lang$animation_frame$AnimationFrame$subMap = F2(
+	function (func, sub) {
+		var _p11 = sub;
+		if (_p11.ctor === 'Time') {
+			return _elm_lang$animation_frame$AnimationFrame$Time(
+				function (_p12) {
+					return func(
+						_p11._0(_p12));
+				});
+		} else {
+			return _elm_lang$animation_frame$AnimationFrame$Diff(
+				function (_p13) {
+					return func(
+						_p11._0(_p13));
+				});
+		}
+	});
+_elm_lang$core$Native_Platform.effectManagers['AnimationFrame'] = {pkg: 'elm-lang/animation-frame', init: _elm_lang$animation_frame$AnimationFrame$init, onEffects: _elm_lang$animation_frame$AnimationFrame$onEffects, onSelfMsg: _elm_lang$animation_frame$AnimationFrame$onSelfMsg, tag: 'sub', subMap: _elm_lang$animation_frame$AnimationFrame$subMap};
 var _elm_lang$dom$Native_Dom = function() {
 
 var fakeNode = {
@@ -13438,6 +13601,9 @@ var _elm_lang$html$Html_Attributes$classList = function (list) {
 				A2(_elm_lang$core$List$filter, _elm_lang$core$Tuple$second, list))));
 };
 var _elm_lang$html$Html_Attributes$style = _elm_lang$virtual_dom$VirtualDom$style;
+var _elm_lang$html$Html_Lazy$lazy3 = _elm_lang$virtual_dom$VirtualDom$lazy3;
+var _elm_lang$html$Html_Lazy$lazy2 = _elm_lang$virtual_dom$VirtualDom$lazy2;
+var _elm_lang$html$Html_Lazy$lazy = _elm_lang$virtual_dom$VirtualDom$lazy;
 var _elm_lang$keyboard$Keyboard$onSelfMsg = F3(
 	function (router, _p0, state) {
 		var _p1 = _p0;
@@ -15484,25 +15650,6 @@ var _user$project$HyperbolicPlaneTree$renderTree = function (f) {
 			_elm_lang$lazy$Lazy$force(_p6));
 	};
 };
-var _user$project$HyperbolicPlaneTree$Program = F4(
-	function (a, b, c, d) {
-		return {init: a, update: b, view: c, subscriptions: d};
-	});
-var _user$project$HyperbolicPlaneTree$Model = F3(
-	function (a, b, c) {
-		return {r: a, theta: b, zipper: c};
-	});
-var _user$project$HyperbolicPlaneTree$Vertex = F3(
-	function (a, b, c) {
-		return {position: a, coord: b, color: c};
-	});
-var _user$project$HyperbolicPlaneTree$Uniforms = F2(
-	function (a, b) {
-		return {perspective: a, texture: b};
-	});
-var _user$project$HyperbolicPlaneTree$Key = function (a) {
-	return {ctor: 'Key', _0: a};
-};
 var _user$project$HyperbolicPlaneTree$run = function (theTree) {
 	return {
 		init: {
@@ -15576,32 +15723,14 @@ var _user$project$HyperbolicPlaneTree$run = function (theTree) {
 					}
 				});
 			var handleMsg = F2(
-				function (msg, model) {
-					var _p10 = msg;
-					switch (_p10._0) {
-						case 65:
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									theta: model.theta - (5.0e-2 * Math.pow(_elm_lang$core$Basics$e, model.r))
-								});
-						case 68:
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									theta: model.theta + (5.0e-2 * Math.pow(_elm_lang$core$Basics$e, model.r))
-								});
-						case 87:
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{r: model.r - 5.0e-2});
-						case 83:
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{r: model.r + 5.0e-2});
-						default:
-							return model;
-					}
+				function (_p10, model) {
+					var _p11 = _p10;
+					return _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							theta: model.theta + (_p11.theta * Math.pow(_elm_lang$core$Basics$e, model.r)),
+							r: model.r - _p11.r
+						});
 				});
 			return F2(
 				function (msg, model) {
@@ -15612,8 +15741,8 @@ var _user$project$HyperbolicPlaneTree$run = function (theTree) {
 				});
 		}(),
 		view: F2(
-			function (tx, _p11) {
-				var _p12 = _p11;
+			function (tx, _p12) {
+				var _p13 = _p12;
 				return A2(
 					_elm_lang$html$Html$div,
 					{
@@ -15750,10 +15879,10 @@ var _user$project$HyperbolicPlaneTree$run = function (theTree) {
 																	A3(_elm_community$linear_algebra$Math_Vector3$vec3, 0, 1, 0)),
 																_1: {
 																	ctor: '::',
-																	_0: _user$project$HyperbolicPlaneTree$mat1(_p12.r),
+																	_0: _user$project$HyperbolicPlaneTree$mat1(_p13.r),
 																	_1: {
 																		ctor: '::',
-																		_0: _user$project$HyperbolicPlaneTree$mat2(_p12.theta),
+																		_0: _user$project$HyperbolicPlaneTree$mat2(_p13.theta),
 																		_1: {
 																			ctor: '::',
 																			_0: mat,
@@ -15768,14 +15897,33 @@ var _user$project$HyperbolicPlaneTree$run = function (theTree) {
 									A2(
 										_user$project$Tree$take,
 										1,
-										_user$project$TreeZipper$belowCursor(_p12.zipper)))),
+										_user$project$TreeZipper$belowCursor(_p13.zipper)))),
 							_1: {ctor: '[]'}
 						}
 					});
-			}),
-		subscriptions: _elm_lang$keyboard$Keyboard$downs(_user$project$HyperbolicPlaneTree$Key)
+			})
 	};
 };
+var _user$project$HyperbolicPlaneTree$Program = F3(
+	function (a, b, c) {
+		return {init: a, update: b, view: c};
+	});
+var _user$project$HyperbolicPlaneTree$Model = F3(
+	function (a, b, c) {
+		return {r: a, theta: b, zipper: c};
+	});
+var _user$project$HyperbolicPlaneTree$Msg = F2(
+	function (a, b) {
+		return {r: a, theta: b};
+	});
+var _user$project$HyperbolicPlaneTree$Vertex = F3(
+	function (a, b, c) {
+		return {position: a, coord: b, color: c};
+	});
+var _user$project$HyperbolicPlaneTree$Uniforms = F2(
+	function (a, b) {
+		return {perspective: a, texture: b};
+	});
 var _user$project$Main$chessPiece = function () {
 	var f = F2(
 		function (u, v) {
@@ -15980,8 +16128,14 @@ var _user$project$Main$LoadingFailed = function (a) {
 	return {ctor: 'LoadingFailed', _0: a};
 };
 var _user$project$Main$LoadingAssets = {ctor: 'LoadingAssets'};
-var _user$project$Main$Msg = function (a) {
-	return {ctor: 'Msg', _0: a};
+var _user$project$Main$Tick = function (a) {
+	return {ctor: 'Tick', _0: a};
+};
+var _user$project$Main$KeyUp = function (a) {
+	return {ctor: 'KeyUp', _0: a};
+};
+var _user$project$Main$KeyDown = function (a) {
+	return {ctor: 'KeyDown', _0: a};
 };
 var _user$project$Main$TextureLoaded = function (a) {
 	return {ctor: 'TextureLoaded', _0: a};
@@ -15998,81 +16152,130 @@ var _user$project$Main$main = function () {
 	var init = _p13.init;
 	var update = _p13.update;
 	var view = _p13.view;
-	var subscriptions = _p13.subscriptions;
 	return _elm_lang$html$Html$program(
 		{
 			init: {
 				ctor: '_Tuple2',
-				_0: _user$project$Main$LoadingAssets,
+				_0: {model: _user$project$Main$LoadingAssets, keys: _elm_lang$core$Set$empty},
 				_1: A2(
 					_elm_lang$core$Task$attempt,
 					_user$project$Main$TextureLoaded,
 					A2(_elm_community$webgl$WebGL_Texture$loadWith, _elm_community$webgl$WebGL_Texture$nonPowerOfTwoOptions, './Pieces.png'))
 			},
 			update: F2(
-				function (msg, model) {
-					var _p15 = {ctor: '_Tuple2', _0: msg, _1: model};
-					_v4_2:
+				function (msg, m) {
+					var _p15 = {ctor: '_Tuple2', _0: msg, _1: m.model};
+					_v4_4:
 					do {
 						if (_p15.ctor === '_Tuple2') {
-							if (_p15._0.ctor === 'TextureLoaded') {
-								if (_p15._0._0.ctor === 'Ok') {
+							switch (_p15._0.ctor) {
+								case 'TextureLoaded':
+									if (_p15._0._0.ctor === 'Ok') {
+										return {
+											ctor: '_Tuple2',
+											_0: _elm_lang$core$Native_Utils.update(
+												m,
+												{
+													model: A2(_user$project$Main$MainApp, _p15._0._0._0, init)
+												}),
+											_1: _elm_lang$core$Platform_Cmd$none
+										};
+									} else {
+										break _v4_4;
+									}
+								case 'Tick':
+									if (_p15._1.ctor === 'MainApp') {
+										var _p16 = _p15._0._0;
+										var t = (A2(_elm_lang$core$Set$member, 68, m.keys) ? _elm_lang$core$Time$inSeconds(_p16) : 0) - (A2(_elm_lang$core$Set$member, 65, m.keys) ? _elm_lang$core$Time$inSeconds(_p16) : 0);
+										var r = (A2(_elm_lang$core$Set$member, 87, m.keys) ? _elm_lang$core$Time$inSeconds(_p16) : 0) - (A2(_elm_lang$core$Set$member, 83, m.keys) ? _elm_lang$core$Time$inSeconds(_p16) : 0);
+										return (_elm_lang$core$Native_Utils.eq(r, 0) && _elm_lang$core$Native_Utils.eq(t, 0)) ? {ctor: '_Tuple2', _0: m, _1: _elm_lang$core$Platform_Cmd$none} : {
+											ctor: '_Tuple2',
+											_0: _elm_lang$core$Native_Utils.update(
+												m,
+												{
+													model: A2(
+														_user$project$Main$MainApp,
+														_p15._1._0,
+														A2(
+															update,
+															{r: r, theta: t},
+															_p15._1._1))
+												}),
+											_1: _elm_lang$core$Platform_Cmd$none
+										};
+									} else {
+										break _v4_4;
+									}
+								case 'KeyDown':
 									return {
 										ctor: '_Tuple2',
-										_0: A2(_user$project$Main$MainApp, _p15._0._0._0, init),
+										_0: _elm_lang$core$Native_Utils.update(
+											m,
+											{
+												keys: A2(_elm_lang$core$Set$insert, _p15._0._0, m.keys)
+											}),
 										_1: _elm_lang$core$Platform_Cmd$none
 									};
-								} else {
-									break _v4_2;
-								}
-							} else {
-								if (_p15._1.ctor === 'MainApp') {
+								default:
 									return {
 										ctor: '_Tuple2',
-										_0: A2(
-											_user$project$Main$MainApp,
-											_p15._1._0,
-											A2(update, _p15._0._0, _p15._1._1)),
+										_0: _elm_lang$core$Native_Utils.update(
+											m,
+											{
+												keys: A2(_elm_lang$core$Set$remove, _p15._0._0, m.keys)
+											}),
 										_1: _elm_lang$core$Platform_Cmd$none
 									};
-								} else {
-									break _v4_2;
-								}
 							}
 						} else {
-							break _v4_2;
+							break _v4_4;
 						}
 					} while(false);
-					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+					return {ctor: '_Tuple2', _0: m, _1: _elm_lang$core$Platform_Cmd$none};
 				}),
-			view: function (model) {
-				var _p16 = model;
-				switch (_p16.ctor) {
-					case 'LoadingAssets':
-						return _elm_lang$html$Html$text('Loading...');
-					case 'LoadingFailed':
-						return A2(
-							_elm_lang$html$Html$div,
-							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Failed to load assets. The error was:'),
-								_1: {
+			view: _elm_lang$html$Html_Lazy$lazy(
+				function (_p17) {
+					var _p18 = _p17;
+					var _p19 = _p18.model;
+					switch (_p19.ctor) {
+						case 'LoadingAssets':
+							return _elm_lang$html$Html$text('Loading...');
+						case 'LoadingFailed':
+							return A2(
+								_elm_lang$html$Html$div,
+								{ctor: '[]'},
+								{
 									ctor: '::',
-									_0: _elm_lang$html$Html$text(
-										_elm_lang$core$Basics$toString(_p16._0)),
-									_1: {ctor: '[]'}
-								}
-							});
-					default:
-						return A2(
-							_elm_lang$html$Html$map,
-							_user$project$Main$Msg,
-							A2(view, _p16._0, _p16._1));
-				}
-			},
-			subscriptions: function (_p17) {
-				return A2(_elm_lang$core$Platform_Sub$map, _user$project$Main$Msg, subscriptions);
+									_0: _elm_lang$html$Html$text('Failed to load assets. The error was:'),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(
+											_elm_lang$core$Basics$toString(_p19._0)),
+										_1: {ctor: '[]'}
+									}
+								});
+						default:
+							return A2(
+								_elm_lang$html$Html$map,
+								_elm_lang$core$Basics$never,
+								A2(view, _p19._0, _p19._1));
+					}
+				}),
+			subscriptions: function (_p20) {
+				return _elm_lang$core$Platform_Sub$batch(
+					{
+						ctor: '::',
+						_0: _elm_lang$keyboard$Keyboard$downs(_user$project$Main$KeyDown),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$keyboard$Keyboard$ups(_user$project$Main$KeyUp),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$animation_frame$AnimationFrame$diffs(_user$project$Main$Tick),
+								_1: {ctor: '[]'}
+							}
+						}
+					});
 			}
 		});
 }()();

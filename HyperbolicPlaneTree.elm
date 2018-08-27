@@ -1,4 +1,4 @@
-module HyperbolicPlaneTree exposing (run, Model, Msg, Vertex)
+module HyperbolicPlaneTree exposing (run, Model, Vertex)
 
 import Html
 import Html.Attributes
@@ -17,16 +17,11 @@ import TreeZipper exposing (TreeZipper)
 import Lazy exposing (Lazy, lazy, force)
 import List.Extra as List
 
-import Keyboard
-
-
-
 
 type alias Program =
     { init : Model
     , update : Msg -> Model -> Model
-    , view : Texture -> Model -> Html.Html Msg
-    , subscriptions : Sub Msg
+    , view : Texture -> Model -> Html.Html Never
     } 
 
 
@@ -36,8 +31,8 @@ type alias Model =
     , zipper : TreeZipper (Mesh Vertex)
     }
 
-type Msg
-    = Key Keyboard.KeyCode
+type alias Msg
+    = {r : Float, theta : Float}
 
 
 run : Tree (Mesh Vertex) -> Program
@@ -45,12 +40,11 @@ run theTree =
     { init = {r = 0, theta = 0, zipper = TreeZipper.fromTree theTree}
     , update =
         let
-            handleMsg msg model = case msg of
-                Key 65 -> {model | theta = model.theta - 0.05 * e ^ model.r}
-                Key 68 -> {model | theta = model.theta + 0.05 * e ^ model.r}
-                Key 87 -> {model | r = model.r - 0.05}
-                Key 83 -> {model | r = model.r + 0.05}
-                Key _ -> model
+            handleMsg {r,theta} model = 
+                { model 
+                | theta = model.theta + theta * e ^ model.r
+                , r = model.r - r
+                }
 
             moveZipper oldmodel model = 
                 if model.r > 0 || abs model.theta > 0.5
@@ -125,7 +119,6 @@ run theTree =
                 (Tree.take 1 (TreeZipper.belowCursor zipper))
                 )
         ]
-    , subscriptions = Keyboard.downs Key
     }
 
 
