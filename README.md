@@ -12,7 +12,8 @@ You can view the project [here](http://htmlpreview.github.io/?https://github.com
 
 ### Coding language
 
-This is coded in Elm 0.18. I could have easily used 0.19 instead, but I haven't gotten around to installing it yet.
+This is coded in Elm 0.18. ~~I could have easily used 0.19 instead, but I haven't gotten around to installing it yet.~~
+*Actually, this would be difficult, as Elm 0.19 deprecates elm-lang/lazy, which I am using to make a lazy tree of chess games.*
 
 index.html is compiler output.
 
